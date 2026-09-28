@@ -2,6 +2,10 @@
 
 Aplicación en español para caja de dos turnos, cobros Yape anotados en caja, gastos, asistencia, pagos semanales y reportes en soles. No usa inventario. Los datos se guardan como un documento JSON en un proyecto independiente de Supabase. El proyecto arranca sin trabajadores ni movimientos y propone dejar S/ 60 en efectivo al cierre. El acceso requiere contraseña.
 
+## Abrir la aplicación
+
+**[Entrar a Grafiplot · Cuentas claras](https://cuentas-claras-negocio.vasquezpalparoy.chatgpt.site)**. La página está publicada y pide contraseña antes de mostrar las cuentas. Este repositorio contiene el código, no los datos del negocio.
+
 ## Publicar el código en GitHub
 
 1. Descomprime este proyecto y crea un repositorio privado o público en GitHub.
