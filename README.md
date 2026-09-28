@@ -1,18 +1,18 @@
 # Grafiplot · Cuentas claras
 
-Aplicación en español para caja de dos turnos, cobros Yape anotados en caja, gastos, asistencia, pagos semanales y reportes en soles. No usa inventario. Los datos se guardan como un documento JSON en un proyecto independiente de Supabase. El proyecto arranca sin trabajadores ni movimientos y propone dejar S/ 60 en efectivo al cierre. El acceso requiere contraseña.
+Aplicación en español para caja de dos turnos, cobros Yape anotados en caja, gastos, asistencia, pagos semanales y reportes en soles. No usa inventario. Los datos se guardan como un documento JSON en un proyecto independiente de Supabase. El proyecto arranca sin trabajadores ni movimientos y propone dejar S/ 60 en efectivo al cierre. El acceso en GitHub Pages usa un enlace enviado al correo autorizado.
 
 ## Abrir la aplicación
 
-**[Entrar a Grafiplot · Cuentas claras](https://cuentas-claras-negocio.vasquezpalparoy.chatgpt.site)**. La página está publicada y pide contraseña antes de mostrar las cuentas. Este repositorio contiene el código, no los datos del negocio.
+**[Entrar a Grafiplot en GitHub Pages](https://vasquezpalparoy-star.github.io/grafiplot-cuentas-claras/)**. Escribe el correo autorizado y abre el enlace que llega a ese buzón. Los datos se consultan en el proyecto independiente de Supabase y no están dentro de este repositorio.
 
-## Publicar el código en GitHub
+La [versión anterior en chatgpt.site](https://cuentas-claras-negocio.vasquezpalparoy.chatgpt.site/) sigue disponible con su contraseña propia. Ambas versiones consultan el mismo documento de caja.
 
-1. Descomprime este proyecto y crea un repositorio privado o público en GitHub.
-2. Sube el contenido con `git init`, `git add .`, `git commit -m "Grafiplot"` y enlaza el repositorio remoto desde GitHub.
-3. No subas `.env`, `.dev.vars`, respaldos de datos ni claves. `.env.example` contiene solo marcadores.
+## Publicación automática
 
-GitHub guarda el código. **GitHub Pages no ejecuta las rutas `/api/state` ni las funciones de Cloudflare**; para usar la aplicación hay que desplegarla en un entorno compatible con Cloudflare Workers/Vinext y restringir el acceso a los visitantes. El sitio publicado muestra un formulario de contraseña antes de permitir el acceso a los datos. Si publicas otra copia, configura los secretos de acceso y protege sus rutas.
+Cada cambio en `main` ejecuta `.github/workflows/pages.yml`, construye la versión estática con Vite y la despliega en GitHub Pages. En **Settings → Pages**, selecciona **GitHub Actions** como origen. La carpeta `pages/` contiene la versión para navegador; el resto del proyecto conserva la versión de servidor.
+
+La versión de GitHub Pages utiliza una clave pública de Supabase Auth. Las políticas RLS de la base limitan la lectura y escritura al correo autorizado. Nunca publiques contraseñas, tokens privados, claves `service_role` ni respaldos de datos.
 
 ## Preparar Supabase
 
@@ -21,7 +21,7 @@ GitHub guarda el código. **GitHub Pages no ejecuta las rutas `/api/state` ni la
 3. Configura `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` y `SUPABASE_APP_TOKEN` como variables del servidor de despliegue. El token debe coincidir con el hash del SQL. **No uses** una clave `service_role` ni prefijos `NEXT_PUBLIC_` para estos valores.
 4. En desarrollo local, copia `.env.example` a `.env` y reemplaza los marcadores. El plugin de Cloudflare carga las variables locales en `env`; `.env` está ignorado por Git.
 
-La tabla tiene RLS y permisos explícitos para `anon`, con una política que exige el token enviado únicamente desde el servidor. Las rutas `/api/state` leen y guardan con revisión incremental; si otra pestaña guardó antes, la app informa el conflicto. El primer acceso crea un estado vacío.
+La tabla tiene RLS: el servidor anterior usa un token privado; GitHub Pages usa Supabase Auth y políticas `authenticated` limitadas al correo autorizado. Las rutas `/api/state` leen y guardan con revisión incremental; si otra pestaña guardó antes, la app informa el conflicto. El primer acceso crea un estado vacío.
 
 ## Contraseña de acceso
 
