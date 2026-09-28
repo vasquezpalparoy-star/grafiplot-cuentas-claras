@@ -8,7 +8,7 @@ Aplicación en español para caja de dos turnos, cobros Yape anotados en caja, g
 2. Sube el contenido con `git init`, `git add .`, `git commit -m "Grafiplot"` y enlaza el repositorio remoto desde GitHub.
 3. No subas `.env`, `.dev.vars`, respaldos de datos ni claves. `.env.example` contiene solo marcadores.
 
-GitHub guarda el código. **GitHub Pages no ejecuta las rutas `/api/state` ni las funciones de Cloudflare**; para usar la aplicación hay que desplegarla en un entorno compatible con Cloudflare Workers/Vinext y restringir el acceso a los visitantes. El sitio actual de Sites ya tiene acceso privado. Si publicas otra copia sin control de acceso, las rutas de la aplicación quedarían expuestas a sus visitantes.
+GitHub guarda el código. **GitHub Pages no ejecuta las rutas `/api/state` ni las funciones de Cloudflare**; para usar la aplicación hay que desplegarla en un entorno compatible con Cloudflare Workers/Vinext y restringir el acceso a los visitantes. El sitio publicado muestra un formulario de contraseña antes de permitir el acceso a los datos. Si publicas otra copia, configura los secretos de acceso y protege sus rutas.
 
 ## Preparar Supabase
 
@@ -26,7 +26,7 @@ Configura dos secretos adicionales en el servidor:
 - `APP_LOGIN_PASSWORD`: contraseña larga y única para ingresar. Puedes generarla con `openssl rand -base64 24`.
 - `APP_SESSION_SECRET`: clave independiente para firmar las sesiones. Genera `openssl rand -hex 32`.
 
-El navegador recibe una cookie `HttpOnly`, `SameSite=Strict`, válida por siete días. Las rutas de datos y los archivos de respaldo comprueban esa cookie; la contraseña y el token de Supabase permanecen en el servidor. Para cambiar la contraseña, actualiza el secreto del servidor; rota también `APP_SESSION_SECRET` si quieres cerrar todas las sesiones abiertas. No publiques estos valores en GitHub. El sitio de Sites conserva además su acceso privado de propietario. Para otra plataforma, añade control de acceso y limitación de intentos en el perímetro antes de exponer la app públicamente.
+El navegador recibe una cookie `HttpOnly`, `SameSite=Strict`, válida por siete días. Las rutas de datos y los archivos de respaldo comprueban esa cookie; la contraseña y el token de Supabase permanecen en el servidor. Para cambiar la contraseña, actualiza el secreto del servidor; rota también `APP_SESSION_SECRET` si quieres cerrar todas las sesiones abiertas. No publiques estos valores en GitHub. El sitio de Sites es público, pero exige la contraseña de acceso para consultar o modificar datos. Para otra plataforma, añade control de acceso y limitación de intentos en el perímetro antes de exponer la app públicamente.
 
 ## Ejecutar y comprobar
 
