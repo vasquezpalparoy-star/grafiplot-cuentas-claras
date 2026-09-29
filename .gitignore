@@ -49,3 +49,5 @@ next-env.d.ts
 
 /site-archive.tar.gz
 /tsconfig.tsbuildinfo
+/dist-pages/
+/device-security.private.sql
