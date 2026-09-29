@@ -1,18 +1,18 @@
 # Grafiplot · Cuentas claras
 
-Aplicación en español para caja de dos turnos, cobros Yape anotados en caja, gastos, asistencia, pagos semanales y reportes en soles. No usa inventario. Los datos se guardan como un documento JSON en un proyecto independiente de Supabase. El proyecto arranca sin trabajadores ni movimientos y propone dejar S/ 60 en efectivo al cierre. El acceso en GitHub Pages usa un enlace enviado al correo autorizado.
+Aplicación en español para caja de dos turnos, cobros Yape anotados en caja, gastos, asistencia, pagos semanales y reportes en soles. No usa inventario. Los datos se guardan como un documento JSON en un proyecto independiente de Supabase. El proyecto arranca sin trabajadores ni movimientos y propone dejar S/ 60 en efectivo al cierre. El acceso en GitHub Pages exige el correo autorizado y una clave; hay un máximo de tres sesiones de dispositivo.
 
 ## Abrir la aplicación
 
-**[Entrar a Grafiplot en GitHub Pages](https://vasquezpalparoy-star.github.io/grafiplot-cuentas-claras/)**. Escribe el correo autorizado y abre el enlace que llega a ese buzón. Los datos se consultan en el proyecto independiente de Supabase y no están dentro de este repositorio.
+**[Entrar a Grafiplot en GitHub Pages](https://vasquezpalparoy-star.github.io/grafiplot-cuentas-claras/)**. Escribe el correo autorizado y la clave. Si todavía no tienes una clave, pulsa «Crear o recuperar mi clave» y abre el enlace enviado a ese correo para definirla. Los datos se consultan en el proyecto independiente de Supabase y no están dentro de este repositorio.
 
-La [versión anterior en chatgpt.site](https://cuentas-claras-negocio.vasquezpalparoy.chatgpt.site/) sigue disponible con su contraseña propia. Ambas versiones consultan el mismo documento de caja.
+La [dirección anterior](https://cuentas-claras-negocio.vasquezpalparoy.chatgpt.site/) redirige a GitHub Pages. Sus rutas antiguas ya no tienen permiso para leer ni escribir la caja.
 
 ## Publicación automática
 
 Cada cambio en `main` ejecuta `.github/workflows/pages.yml`, construye la versión estática con Vite y la despliega en GitHub Pages. En **Settings → Pages**, selecciona **GitHub Actions** como origen. La carpeta `pages/` contiene la versión para navegador; el resto del proyecto conserva la versión de servidor.
 
-La versión de GitHub Pages utiliza una clave pública de Supabase Auth. Las políticas RLS de la base limitan la lectura y escritura al correo autorizado. Nunca publiques contraseñas, tokens privados, claves `service_role` ni respaldos de datos.
+La versión de GitHub Pages utiliza una clave pública de Supabase Auth. Las políticas RLS de la base limitan la lectura y escritura al usuario autorizado y a una de tres sesiones registradas. Una cuarta sesión puede liberar un cupo, lo que revoca el acceso a datos de la sesión retirada. Cada navegador cuenta como una sesión, incluso si se usa en el mismo equipo. Nunca publiques contraseñas, tokens privados, claves `service_role` ni respaldos de datos.
 
 ## Preparar Supabase
 
