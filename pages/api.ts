@@ -24,7 +24,12 @@ function acceptLink() {
     history.replaceState(null,'',location.pathname+location.search);
   }
   const error=fragment.get('error_description');
-  if(error) { history.replaceState(null,'',location.pathname+location.search); throw new Error(decodeURIComponent(error)); }
+  if(error) {
+    history.replaceState(null,'',location.pathname+location.search);
+    if(fragment.get('error_code')==='otp_expired' || /invalid or has expired/i.test(error))
+      throw new Error('El enlace de correo ya venció o fue usado. Solicita uno nuevo y abre solo el mensaje más reciente.');
+    throw new Error(error);
+  }
 }
 async function token():Promise<string|null> {
   acceptLink();
@@ -97,6 +102,7 @@ export async function apiFetch(path:string,init:RequestInit={}):Promise<Response
           if(!emailValid(String(email||'').trim()))return fail('Escribe un correo válido.');
           const redirect=location.origin+location.pathname;
           const response=await fetch(`${url}/auth/v1/recover?redirect_to=${encodeURIComponent(redirect)}`,{method:'POST',headers:headers(undefined,{'Content-Type':'application/json'}),body:JSON.stringify({email:email!.trim().toLowerCase()})});
+          if(response.status===429)return fail('Se alcanzó el límite de correos de Supabase. Espera antes de pedir otro enlace y revisa el mensaje más reciente.',429);
           if(!response.ok)return fail('No se pudo solicitar el enlace. Intenta más tarde.',response.status);
           return json({pending:true});
         }
