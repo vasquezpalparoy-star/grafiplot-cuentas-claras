@@ -49,6 +49,11 @@ async function accessStatus(access?:string) {
   if(!bearer)return {authenticated:false};
   const registered=await rpc('register_device',{p_label:/Mobi|Android|iPhone/i.test(navigator.userAgent)?'Celular':'Computadora'},bearer) as boolean;
   if(registered)return {authenticated:true,recovery:localStorage.getItem(recoveryKey)==='1'};
+  if(await rpc('is_revoked',{},bearer) as boolean){
+    localStorage.removeItem(storageKey);
+    localStorage.removeItem(recoveryKey);
+    return {authenticated:false,revoked:true};
+  }
   return {authenticated:false,limit:true,devices:await rpc('list_devices',{},bearer) as Device[]};
 }
 function remember(next:{access_token:string;refresh_token:string;expires_in:number}) {
