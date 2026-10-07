@@ -51,3 +51,7 @@ next-env.d.ts
 /tsconfig.tsbuildinfo
 /dist-pages/
 /device-security.private.sql
+
+/dist-android/
+*.jks
+*.keystore

@@ -1,0 +1,38 @@
+name: Compilar APK Android independiente
+on:
+  push:
+    branches: [android-apk-offline]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm android:test && pnpm exec tsc --noEmit -p tsconfig.android.json
+      - run: pnpm android:sync
+      - run: chmod +x android/gradlew && cd android && ./gradlew assembleRelease lintRelease
+      - uses: actions/upload-artifact@v4
+        with:
+          name: grafiplot-android-release-unsigned
+          path: android/app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: android-lint
+          path: android/app/build/reports/lint-results-release.html
