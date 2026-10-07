@@ -28,3 +28,9 @@ test('detiene eliminación contra edición remota',()=>{
  const base=state();base.entries=[{id:'a',amount:10}];const local=structuredClone(base),remote=structuredClone(base);
  local.entries=[];remote.entries[0].amount=20;assert.throws(()=>mergeStates(base,local,remote),SyncConflict);
 });
+test('resolución elegida conserva cambios independientes de ambos dispositivos',()=>{
+ const base=state();base.entries=[{id:'a',amount:10}];const local=structuredClone(base),remote=structuredClone(base);
+ local.entries[0].amount=15;remote.entries[0].amount=20;local.entries.push({id:'b',amount:30});remote.entries.push({id:'c',amount:40});
+ assert.deepEqual(mergeStates(base,local,remote,'local').entries.map((e:any)=>e.amount),[15,30,40]);
+ assert.deepEqual(mergeStates(base,local,remote,'remote').entries.map((e:any)=>e.amount),[20,30,40]);
+});

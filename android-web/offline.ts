@@ -23,11 +23,11 @@ async function checkedAuth(){
   }
   return response;
 }
-async function synchronize(){
+async function synchronize(prefer?:'local'|'remote'){
   if(!navigator.onLine){announce('local');return}
   announce('syncing');
   const auth=await checkedAuth();
-  if(!auth.ok)throw new Error('No se pudo verificar el acceso a la nube.');
+  if(!auth.ok){announce('local');throw new Error('No se pudo verificar el acceso a la nube. Los datos locales se conservan.');}
   const a=await auth.json() as {authenticated?:boolean};
   if(!a.authenticated){announce('locked');throw new Error('Inicia sesión otra vez para sincronizar. Los cambios pendientes permanecen cifrados.')}
   const current=await cache(),identity=await sessionIdentity();
@@ -37,7 +37,7 @@ async function synchronize(){
   const remote=await response.json() as State;
   if(!current.pending){await storage.set(cacheKey,JSON.stringify({...current,base:remote,local:remote}));announce('cloud');return}
   try {
-    const merged=mergeStates(current.base,current.local,remote);
+    const merged=mergeStates(current.base,current.local,remote,prefer);
     const write=await remoteFetch('/api/state',{method:'PUT',body:JSON.stringify(merged)});
     if(!write.ok){announce(write.status===409?'conflict':'local');throw new Error(write.status===409?'Otro dispositivo guardó mientras se sincronizaba. Reintenta; tus datos siguen en el celular.':'No se pudo guardar en la nube; los cambios siguen en el celular.')}
     const result=await write.json() as {revision:number};
@@ -47,12 +47,13 @@ async function synchronize(){
 }
 let queue:Promise<unknown>=Promise.resolve();
 function serial<T>(fn:()=>Promise<T>):Promise<T>{const task=queue.then(fn);queue=task.catch(()=>{});return task}
-export function syncNow(){return serial(synchronize)}
+export function syncNow(){return serial(()=>synchronize())}
+export function resolveSync(prefer:'local'|'remote'){return serial(()=>synchronize(prefer))}
 export function apiFetch(path:string,init:RequestInit={}):Promise<Response>{return serial(async()=>{
   if(!native)return remoteFetch(path,init);
   if(path==='/api/auth'){
     if(init.method==='DELETE'){
-      const c=await cache();if(c?.pending)return json({error:'Primero sincroniza o exporta los cambios pendientes. Cerrar sesión borraría la copia local.'},409);
+      const c=await cache();if(c?.pending)return json({error:'Primero sincroniza los cambios pendientes. Puedes exportar una copia como respaldo.'},409);
       // Clear locally even when the network is unavailable.
       const response=await remoteFetch(path,init);await storage.remove('grafiplot-pages-session');await storage.remove(cacheKey);await storage.remove(grantKey);return response;
     }

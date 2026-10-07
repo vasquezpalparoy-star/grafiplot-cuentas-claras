@@ -10,7 +10,7 @@ Con la app abierta, al volver internet, volver a la app o cada 30 segundos, comp
 
 La nube conserva el correo autorizado, las políticas RLS y el límite de tres sesiones. La APK solo contiene la clave pública existente. No contiene contraseñas ni claves privadas de Supabase. La recuperación de clave se realiza en la página HTTPS existente; luego se ingresa en la APK con la nueva clave.
 
-Los movimientos independientes se combinan por ID; la caja por fecha y turno. Correcciones incompatibles del mismo campo detienen la sincronización sin sobrescribir el celular ni la nube. Exporta la copia local en «Guía y ajustes», revisa el registro conflictivo con la web y deja los valores iguales para reintentar. No se permite cerrar sesión con cambios pendientes. El respaldo exportado contiene los registros contables en JSON sin cifrar: guárdalo de forma privada; no incluye los Excel históricos que pertenecían al servidor anterior.
+Los movimientos independientes se combinan por ID; la caja por fecha y turno. Correcciones incompatibles del mismo campo detienen la sincronización sin sobrescribir el celular ni la nube. Revisa el registro conflictivo con la web. La APK permite conservar las correcciones locales o usar las de la nube; primero solicita exportar un respaldo y conserva los cambios independientes de ambos dispositivos. No se permite cerrar sesión con cambios pendientes. El respaldo exportado contiene los registros contables en JSON sin cifrar: guárdalo de forma privada; no incluye los Excel históricos que pertenecían al servidor anterior.
 
 ## Compilar
 
