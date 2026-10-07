@@ -15,7 +15,7 @@
     "android:web": "vite build --config vite.android.config.ts",
     "android:sync": "pnpm android:web && cap sync android",
     "android:apk": "pnpm android:sync && cd android && ./gradlew assembleDebug",
-    "android:test": "node --experimental-strip-types --test tests/android-sync.test.ts"
+    "android:test": "node --experimental-strip-types --test tests/android-*.test.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

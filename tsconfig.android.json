@@ -1,1 +1,17 @@
-{"extends":"./tsconfig.json","compilerOptions":{"allowImportingTsExtensions":true,"incremental":false},"include":["android-web/**/*.ts","android-web/**/*.tsx","tests/android-sync.test.ts","capacitor.config.ts","vite.android.config.ts"],"exclude":["node_modules"]}
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "incremental": false
+  },
+  "include": [
+    "android-web/**/*.ts",
+    "android-web/**/*.tsx",
+    "tests/android-*.test.ts",
+    "capacitor.config.ts",
+    "vite.android.config.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
