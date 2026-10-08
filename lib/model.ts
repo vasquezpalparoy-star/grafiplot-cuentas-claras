@@ -3,7 +3,7 @@ export type Method = 'efectivo' | 'yape' | 'transferencia';
 export type Shift = 1 | 2;
 export type Worker = { id:string; name:string; rateType:'turno'|'dia'|'hora'|'semana'; rate:number; active:boolean };
 export type Attendance = { id:string; date:string; shift:Shift; workerId:string; hours:number; present?:boolean };
-export type Entry = { id:string; date:string; shift:Shift; kind:'venta'|'otro_ingreso'|'retiro'|'gasto'|'personal'|'adelanto'|'bono'|'descuento'|'devolucion'; amount:number; method:Method; category?:string; concept:string; workerId?:string; receipt?:string; sourceId?:string; yapeId?:string; fixed?:boolean; note?:string; editedAt?:string; excluded?:boolean };
+export type Entry = { id:string; date:string; shift:Shift; kind:'venta'|'otro_ingreso'|'retiro'|'gasto'|'personal'|'adelanto'|'bono'|'descuento'|'devolucion'; amount:number; method:Method; category?:string; concept:string; workerId?:string; receipt?:string; sourceId?:string; yapeId?:string; fixed?:boolean; cashCountAuto?:boolean; note?:string; editedAt?:string; excluded?:boolean };
 export type Yape = { id:string; sourceId:string; row:number; date:string; time:string; amount:number; kind:'cobro'|'devolucion'|'salida'; reference:string; shift:Shift|null; status:'pendiente'|'incluido'|'excluido'; linkedEntryId?:string; duplicateReason?:string; original:Record<string,string>; note?:string };
 export type Source = { id:string; name:string; uploadedAt:string; rows:number; stored:boolean };
 export type CashShift = { date:string; shift:Shift; opening:number; counted:number|null; yapeClosing?:number|null; explanation:string; closed:boolean };
@@ -35,3 +35,14 @@ export function yapeTotals(s:State,filter:(date:string,shift:Shift)=>boolean){
 export function yapeUnrecordedPaid(s:State,filter:(date:string,shift:Shift)=>boolean){return round(s.yape.filter(y=>y.kind==='salida'&&y.status==='incluido'&&!y.linkedEntryId&&y.shift!==null&&filter(y.date,y.shift)).reduce((v,y)=>v+y.amount,0))}
 export function sales(s:State,filter:(date:string,shift:Shift)=>boolean){const es=s.entries.filter(e=>!e.excluded&&e.kind==='venta'&&filter(e.date,e.shift));const by={efectivo:0,yape:0,transferencia:0};for(const e of es)by[e.method]+=e.amount;for(const y of s.yape)if((y.kind==='cobro'||y.kind==='devolucion')&&y.shift!==null&&filter(y.date,y.shift))by.yape+=yapeEffective(s,y);return {by,total:round(by.efectivo+by.yape+by.transferencia)};}
 export function weeklyPay(s:State,worker:Worker,date:string){const begin=periodStart(date,s.settings.weekStart);const end=new Date(begin+'T12:00:00Z');end.setUTCDate(end.getUTCDate()+6);const until=end.toISOString().slice(0,10);const a=s.attendance.filter(x=>x.present!==false&&x.workerId===worker.id&&x.date>=begin&&x.date<=until);const shifts=a.length,days=new Set(a.map(x=>x.date)).size,hours=round(a.reduce((v,x)=>v+x.hours,0));const base=round(worker.rate*(worker.rateType==='turno'?shifts:worker.rateType==='dia'?days:worker.rateType==='hora'?hours:1));const adjustments=s.entries.filter(e=>!e.excluded&&e.workerId===worker.id&&e.date>=begin&&e.date<=until);const sum=(kind:Entry['kind'])=>round(adjustments.filter(e=>e.kind===kind).reduce((v,e)=>v+e.amount,0));const bonus=sum('bono'),discount=sum('descuento'),advance=sum('adelanto'),paid=sum('personal');return {begin,until,shifts,days,hours,base,bonus,discount,advance,paid,due:round(Math.max(0,base+bonus-discount-advance-paid))};}
+
+// Recalcula solo las ventas de los conteos enviados desde el celular autorizado.
+export function recalculateWorkerCountSales(s:State):State {
+ return {...s,entries:s.entries.map(e=>{
+  if(!e.cashCountAuto||!e.sourceId?.startsWith('worker-count:')||e.excluded)return e;
+  const sh=s.shifts.find(x=>x.date===e.date&&x.shift===e.shift);
+  if(sh?.counted==null)return e;
+  const adjustment=s.entries.filter(x=>x.id!==e.id&&!x.excluded&&x.date===e.date&&x.shift===e.shift&&x.method==='efectivo').reduce((sum,x)=>sum+(['venta','otro_ingreso'].includes(x.kind)?-x.amount:['bono','descuento'].includes(x.kind)?0:x.amount),0);
+  return {...e,amount:round(Math.max(0,sh.counted-sh.opening+adjustment))};
+ })};
+}
