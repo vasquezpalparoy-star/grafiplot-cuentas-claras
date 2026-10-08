@@ -1,24 +1,27 @@
-# Grafiplot · Informes Android
+# Grafiplot · Conteo de efectivo Android
 
-Aplicación separada para un único celular, con informes de mañana y tarde. La caja y las pantallas actuales se conservan. No hay aplicación de Windows.
+APK para un único celular autorizado, con el icono Grafiplot aportado por el propietario. El trabajador solo elige mañana o tarde y registra el efectivo contado al cierre, incluidos los S/ 60 iniciales. El efectivo inicial se guarda automáticamente como S/ 60 para cada turno.
 
-## Autorizar el celular
+No pide ventas, gastos, Yape, trabajador, horas ni observaciones. No consulta la caja ni permite editar o borrar registros enviados. El propietario completa gastos, Yape y la revisión final en su aplicación principal.
 
-1. Agrega los trabajadores activos en Personal del sistema actual.
-2. Desde el navegador donde iniciaste sesión como propietario, abre `https://vasquezpalparoy-star.github.io/grafiplot-cuentas-claras/trabajador.html?activar=1` y genera un código.
-3. Instala la APK en el celular y pega el código una vez. Se recordará el equipo y los nombres de los trabajadores activos al activarlo.
-4. El trabajador elige su nombre, mañana o tarde, completa efectivo, gastos en efectivo, horas y observaciones, revisa y confirma el envío. Necesita internet para enviar. El borrador queda en el equipo.
+## Activar el celular una sola vez
 
-Solo hay un acceso de celular vigente en la base de datos. El código caduca en siete días y se consume al activarlo. Generar otro código revoca el equipo anterior; sirve también si se cambia de celular o de lista de trabajadores. La app deshabilita copias de seguridad de Android y la depuración del WebView. No hay inicio de sesión del propietario dentro de la APK, ni acceso a sus pantallas, importaciones, recuperación de datos o modificación de registros enviados.
+1. En el navegador donde ingresas al sistema principal con tu cuenta, abre https://vasquezpalparoy-star.github.io/grafiplot-cuentas-claras/trabajador.html?activar=1.
+2. Genera el código de activación, instala la APK en el celular y pega el código.
+3. En adelante el equipo recordará su autorización: turno, conteo, revisión y envío.
 
-La APK no pide ni registra cobros, gastos o saldos de Yape. El propietario completa Yape después en el sistema principal. El envío añade ventas en efectivo, gastos en efectivo, asistencia y cierre de efectivo a la caja existente, y registra auditoría y revisión en una sola transacción. El sistema principal ve los datos al cargar o recargar su página. Los reintentos del mismo informe reciben el comprobante anterior sin repetir movimientos. Otro contenido para el mismo trabajador/fecha/turno se rechaza. Si el turno ya tiene ventas en efectivo o un cierre, se rechaza para no reemplazar datos del sistema. Las correcciones se hacen desde el sistema principal por el propietario. La APK no puede borrar ni modificar informes.
+El código dura siete días y se consume una vez. Generar otro código revoca el celular anterior. No hace falta registrar trabajadores para utilizar esta APK. Se deshabilitan las copias de seguridad Android y la depuración del WebView.
 
-## Construcción e instalación
+## Datos que registra
 
-El workflow **Construir APK de informes** genera el archivo instalable en el artefacto **Grafiplot-Informes-Android**. Descarga el ZIP del workflow, extrae `app-debug.apk` e instálalo en Android 8 o posterior. Es una APK firmada de instalación directa, con depuración deshabilitada. No se publica en Play Store.
+El envío guarda exclusivamente efectivo inicial (S/ 60), efectivo contado, turno, fecha y auditoría. No añade ventas, gastos ni asistencia, y conserva movimientos, Yape y los demás registros. El cierre queda pendiente de revisión del propietario (`closed=false`) hasta que complete sus datos en el sistema principal. No se calculan ventas a partir del conteo, porque los gastos y otros movimientos se registran por separado.
 
-La firma inicial es de desarrollo; los builds de distintos runners pueden tener firmas diferentes. Para actualizaciones continuas sobre la misma instalación se necesita configurar una clave de firma de producción en GitHub Secrets. No desinstales la app sin guardar o enviar tu borrador: desinstalar borra su activación. El propietario puede generar un nuevo código si fuera necesario.
+Se permite un conteo por fecha y turno. Un reintento idéntico devuelve el mismo comprobante. Otro conteo para el mismo turno se rechaza. Si el sistema principal ya tiene conteo o cierre, la APK no lo reemplaza. El sistema principal ve el conteo al cargar o recargar la página.
 
-## Base de datos
+## Instalar
 
-`supabase/worker-reports.sql` añade dos tablas privadas y tres operaciones específicas. No modifica las políticas existentes de caja, el inicio de sesión ni las sesiones del propietario. Los trabajadores no pueden leer la caja ni acceder directamente a estas tablas. Su token autoriza exclusivamente el envío. La activación devuelve solo nombres e identificadores de trabajadores activos, sin tarifas ni datos de caja.
+Descarga la APK e instálala en Android 8 o posterior. Es una APK firmada para instalación directa; no se publica en Play Store. Necesita internet para enviar y guarda localmente el borrador si no se envía. La APK carga la pantalla publicada y recibe sus mejoras sin reinstalar.
+
+El workflow **Construir APK de informes** genera el artefacto **Grafiplot-Informes-Android**. La firma inicial es de desarrollo; nuevos builds de runners diferentes pueden tener otra firma. Las actualizaciones del binario sobre la misma instalación requieren una firma estable en GitHub Secrets. La desinstalación borra la autorización y el borrador.
+
+`supabase/worker-reports.sql` añade dos tablas privadas y tres operaciones limitadas. La activación no devuelve información de caja. No se modifican las políticas ni las sesiones del propietario.
