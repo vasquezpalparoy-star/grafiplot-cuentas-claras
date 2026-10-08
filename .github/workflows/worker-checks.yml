@@ -1,0 +1,22 @@
+name: Comprobar informes y página existente
+on:
+  push:
+    branches: [main, 'codex/informes-apk']
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.25.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec vite build --config vite.pages.config.ts
+      - run: pnpm exec tsc --noEmit --target ES2022 --module ESNext --moduleResolution bundler --jsx react-jsx --skipLibCheck --esModuleInterop pages/worker/main.tsx
