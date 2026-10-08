@@ -56,7 +56,7 @@ begin
  if p_report is null or jsonb_typeof(p_report)<>'object' or pg_column_size(p_report)>20000 then raise exception 'Informe inválido'; end if;
  rd:=(p_report->>'date')::date; sh:=(p_report->>'shift')::smallint;
  if rd is null or sh is null or sh not in (1,2) or rd<>(now() at time zone 'America/Lima')::date then raise exception 'Solo puedes informar la fecha de hoy y un turno válido'; end if;
- foreach k in array array['cashSales','yapeSales','opening','counted','yapeClosing','hours'] loop
+ foreach k in array array['cashSales','opening','counted','hours'] loop
   if jsonb_typeof(p_report->k) is distinct from 'number' then raise exception 'Completa todos los importes y las horas'; end if;
   amount:=(p_report->>k)::numeric;
   if amount<0 or amount>1000000 or amount<>round(amount,2) then raise exception 'Importe inválido'; end if;
@@ -75,27 +75,27 @@ begin
   raise exception 'Ya enviaste un informe para esta fecha y turno';
  end if;
  if exists(select 1 from jsonb_array_elements(d->'shifts') x where x->>'date'=rd::text and (x->>'shift')::smallint=sh and (coalesce((x->>'closed')::boolean,false) or x->>'counted' is not null))
- or exists(select 1 from jsonb_array_elements(d->'entries') x where x->>'date'=rd::text and (x->>'shift')::smallint=sh and x->>'kind'='venta' and not coalesce((x->>'excluded')::boolean,false))
- then raise exception 'Este turno ya tiene ventas o un cierre. Consulta al encargado; no se reemplazaron datos.'; end if;
+ or exists(select 1 from jsonb_array_elements(d->'entries') x where x->>'date'=rd::text and (x->>'shift')::smallint=sh and x->>'kind'='venta' and x->>'method'='efectivo' and not coalesce((x->>'excluded')::boolean,false))
+ then raise exception 'Este turno ya tiene ventas en efectivo o un cierre. Consulta al encargado; no se reemplazaron datos.'; end if;
  rid:=gen_random_uuid(); es:=coalesce(d->'entries','[]'::jsonb);
- foreach k in array array['cashSales','yapeSales'] loop
+ foreach k in array array['cashSales'] loop
   amount:=(p_report->>k)::numeric;
   if amount>0 then
-   entry:=jsonb_build_object('id',gen_random_uuid(),'date',rd,'shift',sh,'kind','venta','amount',amount,'method',case when k='cashSales' then 'efectivo' else 'yape' end,'concept',case when k='cashSales' then 'Ventas del turno' else 'Cobros Yape del turno' end,'workerId',wid,'sourceId',rid,'note',note);
+   entry:=jsonb_build_object('id',gen_random_uuid(),'date',rd,'shift',sh,'kind','venta','amount',amount,'method','efectivo','concept','Ventas del turno','workerId',wid,'sourceId',rid,'note',note);
    es:=es||jsonb_build_array(entry);
   end if;
  end loop;
  for expense in select value from jsonb_array_elements(p_report->'expenses') loop
   if jsonb_typeof(expense->'amount') is distinct from 'number' then raise exception 'Importe de gasto inválido'; end if;
   amount:=(expense->>'amount')::numeric;
-  if amount<=0 or amount>1000000 or amount<>round(amount,2) or coalesce(expense->>'method','') not in ('efectivo','yape','transferencia') or length(btrim(coalesce(expense->>'concept','')))=0 or length(expense->>'concept')>160 then raise exception 'Completa concepto, importe y medio del gasto'; end if;
+  if amount<=0 or amount>1000000 or amount<>round(amount,2) or coalesce(expense->>'method','') <> 'efectivo' or length(btrim(coalesce(expense->>'concept','')))=0 or length(expense->>'concept')>160 then raise exception 'Completa concepto, importe y medio del gasto'; end if;
   es:=es||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'date',rd,'shift',sh,'kind','gasto','amount',amount,'method',expense->>'method','concept',expense->>'concept','category','Informe trabajador','workerId',wid,'sourceId',rid));
  end loop;
  opening:=(p_report->>'opening')::numeric; counted:=(p_report->>'counted')::numeric;
  select opening+coalesce(sum(case when x->>'method'='efectivo' then case when x->>'kind' in ('venta','otro_ingreso') then (x->>'amount')::numeric when x->>'kind' in ('bono','descuento') then 0 else -(x->>'amount')::numeric end else 0 end),0) into expected from jsonb_array_elements(es) x where x->>'date'=rd::text and (x->>'shift')::smallint=sh and not coalesce((x->>'excluded')::boolean,false);
  if counted<>expected and btrim(note)='' then raise exception 'Explica la diferencia entre el efectivo esperado y el contado'; end if;
  select coalesce(jsonb_agg(x),'[]'::jsonb) into shifts from jsonb_array_elements(d->'shifts') x where not(x->>'date'=rd::text and (x->>'shift')::smallint=sh);
- shifts:=shifts||jsonb_build_array(jsonb_build_object('date',rd,'shift',sh,'opening',opening,'counted',counted,'yapeClosing',(p_report->>'yapeClosing')::numeric,'explanation',note,'closed',true));
+ shifts:=shifts||jsonb_build_array(jsonb_build_object('date',rd,'shift',sh,'opening',opening,'counted',counted,'yapeClosing',(select x->'yapeClosing' from jsonb_array_elements(d->'shifts') x where x->>'date'=rd::text and (x->>'shift')::smallint=sh limit 1),'explanation',note,'closed',true));
  d:=jsonb_set(jsonb_set(d,'{entries}',es),'{shifts}',shifts);
  if not exists(select 1 from jsonb_array_elements(d->'attendance') x where x->>'date'=rd::text and (x->>'shift')::smallint=sh and x->>'workerId'=wid) then
   d:=jsonb_set(d,'{attendance}',coalesce(d->'attendance','[]'::jsonb)||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'date',rd,'shift',sh,'workerId',wid,'hours',(p_report->>'hours')::numeric,'present',true)));

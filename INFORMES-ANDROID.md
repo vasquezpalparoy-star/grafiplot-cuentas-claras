@@ -7,11 +7,11 @@ Aplicación separada para un único celular, con informes de mañana y tarde. La
 1. Agrega los trabajadores activos en Personal del sistema actual.
 2. Desde el navegador donde iniciaste sesión como propietario, abre `https://vasquezpalparoy-star.github.io/grafiplot-cuentas-claras/trabajador.html?activar=1` y genera un código.
 3. Instala la APK en el celular y pega el código una vez. Se recordará el equipo y los nombres de los trabajadores activos al activarlo.
-4. El trabajador elige su nombre, mañana o tarde, completa caja, gastos, horas y observaciones, revisa y confirma el envío. Necesita internet para enviar. El borrador queda en el equipo.
+4. El trabajador elige su nombre, mañana o tarde, completa efectivo, gastos en efectivo, horas y observaciones, revisa y confirma el envío. Necesita internet para enviar. El borrador queda en el equipo.
 
 Solo hay un acceso de celular vigente en la base de datos. El código caduca en siete días y se consume al activarlo. Generar otro código revoca el equipo anterior; sirve también si se cambia de celular o de lista de trabajadores. La app deshabilita copias de seguridad de Android y la depuración del WebView. No hay inicio de sesión del propietario dentro de la APK, ni acceso a sus pantallas, importaciones, recuperación de datos o modificación de registros enviados.
 
-El envío añade ventas, gastos, asistencia y cierre a la caja existente, y registra auditoría y revisión en una sola transacción. El sistema principal ve los datos al cargar o recargar su página. Los reintentos del mismo informe reciben el comprobante anterior sin repetir movimientos. Otro contenido para el mismo trabajador/fecha/turno se rechaza. Si el turno ya tiene ventas o un cierre, se rechaza para no reemplazar datos del sistema. Las correcciones se hacen desde el sistema principal por el propietario. La APK no puede borrar ni modificar informes.
+La APK no pide ni registra cobros, gastos o saldos de Yape. El propietario completa Yape después en el sistema principal. El envío añade ventas en efectivo, gastos en efectivo, asistencia y cierre de efectivo a la caja existente, y registra auditoría y revisión en una sola transacción. El sistema principal ve los datos al cargar o recargar su página. Los reintentos del mismo informe reciben el comprobante anterior sin repetir movimientos. Otro contenido para el mismo trabajador/fecha/turno se rechaza. Si el turno ya tiene ventas en efectivo o un cierre, se rechaza para no reemplazar datos del sistema. Las correcciones se hacen desde el sistema principal por el propietario. La APK no puede borrar ni modificar informes.
 
 ## Construcción e instalación
 
