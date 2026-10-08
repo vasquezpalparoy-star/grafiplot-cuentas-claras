@@ -2,16 +2,11 @@
 -- Los gastos agregados por el propietario se incluyen para no descontarlos dos veces.
 create or replace function app_private.recalculate_worker_count_sales() returns trigger
 language plpgsql set search_path='' as $$
-declare es jsonb; result jsonb:='[]'::jsonb; e jsonb; previous jsonb; sh jsonb; calculated numeric;
+declare es jsonb; result jsonb:='[]'::jsonb; e jsonb; sh jsonb; calculated numeric;
 begin
  es:=coalesce(new.data->'entries','[]'::jsonb);
  for e in select value from jsonb_array_elements(es) loop
   if e->>'cashCountAuto'='true' and e->>'sourceId' like 'worker-count:%' and not coalesce((e->>'excluded')::boolean,false) then
-   select x into previous from jsonb_array_elements(coalesce(old.data->'entries','[]'::jsonb)) x where x->>'id'=e->>'id' limit 1;
-   if previous is not null and e->'amount' is distinct from previous->'amount' then
-    -- Se respeta una corrección explícita de ventas hecha por el propietario.
-    e:=e||jsonb_build_object('cashCountAuto',false);
-   else
     select x into sh from jsonb_array_elements(coalesce(new.data->'shifts','[]'::jsonb)) x where x->>'date'=e->>'date' and x->>'shift'=e->>'shift' limit 1;
     if sh->>'counted' is not null then
      select greatest(0,(sh->>'counted')::numeric-coalesce((sh->>'opening')::numeric,60)+coalesce(sum(case
@@ -21,7 +16,6 @@ begin
      from jsonb_array_elements(es) x where x->>'id'<>e->>'id' and x->>'date'=e->>'date' and x->>'shift'=e->>'shift' and x->>'method'='efectivo' and not coalesce((x->>'excluded')::boolean,false);
      e:=e||jsonb_build_object('amount',round(calculated,2));
     end if;
-   end if;
   end if;
   result:=result||jsonb_build_array(e);
  end loop;

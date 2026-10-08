@@ -6,7 +6,7 @@ import {Tabs,TabsList,TabsTrigger,TabsContent} from '@/components/ui/tabs';
 import {Dialog,DialogContent,DialogHeader,DialogTitle} from '@/components/ui/dialog';
 import {NativeSelect} from '@/components/ui/native-select';
 import {Button} from '@/components/ui/button';
-import {fmt,round,todayLima,periodStart,shiftEntries,cashExpected,defaultCashOpening,sales,yapeTotals,yapeUnrecordedPaid,weeklyPay,uid,type State,type Entry,type Worker,type Shift,type Yape,type Method} from '@/lib/model';
+import {recalculateWorkerCountSales,fmt,round,todayLima,periodStart,shiftEntries,cashExpected,defaultCashOpening,sales,yapeTotals,yapeUnrecordedPaid,weeklyPay,uid,type State,type Entry,type Worker,type Shift,type Yape,type Method} from '@/lib/model';
 import '../app/app.css';
 import {apiFetch, type Device} from './api';
 
@@ -37,7 +37,7 @@ function App(){const [data,setData]=useState<State|null>(null),[error,setError]=
  const writesPending=useRef(0);
  async function save(next:State){
   const base=dataRef.current||data;if(!base)return false;
-  const staged={...next,revision:base.revision+1};dataRef.current=staged;setData(staged);
+  const staged={...recalculateWorkerCountSales(next),revision:base.revision+1};dataRef.current=staged;setData(staged);
   writesPending.current++;setBusy(true);
   const task=writeQueue.current.then(async()=>{
    if(saveFailed.current)throw new Error('No se guardó un cambio anterior. Recarga la página y revisa tus datos.');
