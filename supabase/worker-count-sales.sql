@@ -1,50 +1,38 @@
--- API limitada para informes. No concede lectura de caja a los trabajadores.
--- Requiere las funciones app_private.device_allowed del sistema existente.
-create table app_private.worker_access (
- worker_id text primary key check (worker_id = '__phone__'),
- invite_hash text unique,
- invite_expires timestamptz,
- token_hash text unique,
- activated_at timestamptz
-);
-create table app_private.worker_reports (
- id uuid primary key default gen_random_uuid(),
- worker_id text not null check (worker_id = '__phone__'),
- report_date date not null,
- shift smallint not null check (shift in (1,2)),
- payload jsonb not null,
- created_at timestamptz not null default now(),
- unique(report_date,shift)
-);
-alter table app_private.worker_access enable row level security;
-alter table app_private.worker_reports enable row level security;
-revoke all on app_private.worker_access, app_private.worker_reports from public,anon,authenticated;
+-- Calcula únicamente las ventas asociadas a nuevos conteos de la APK.
+-- Los gastos agregados por el propietario se incluyen para no descontarlos dos veces.
+create or replace function app_private.recalculate_worker_count_sales() returns trigger
+language plpgsql set search_path='' as $$
+declare es jsonb; result jsonb:='[]'::jsonb; e jsonb; previous jsonb; sh jsonb; calculated numeric;
+begin
+ es:=coalesce(new.data->'entries','[]'::jsonb);
+ for e in select value from jsonb_array_elements(es) loop
+  if e->>'cashCountAuto'='true' and e->>'sourceId' like 'worker-count:%' and not coalesce((e->>'excluded')::boolean,false) then
+   select x into previous from jsonb_array_elements(coalesce(old.data->'entries','[]'::jsonb)) x where x->>'id'=e->>'id' limit 1;
+   if previous is not null and e->'amount' is distinct from previous->'amount' then
+    -- Se respeta una corrección explícita de ventas hecha por el propietario.
+    e:=e||jsonb_build_object('cashCountAuto',false);
+   else
+    select x into sh from jsonb_array_elements(coalesce(new.data->'shifts','[]'::jsonb)) x where x->>'date'=e->>'date' and x->>'shift'=e->>'shift' limit 1;
+    if sh->>'counted' is not null then
+     select greatest(0,(sh->>'counted')::numeric-coalesce((sh->>'opening')::numeric,60)+coalesce(sum(case
+      when x->>'kind' in ('venta','otro_ingreso') then -(x->>'amount')::numeric
+      when x->>'kind' in ('bono','descuento') then 0
+      else (x->>'amount')::numeric end),0)) into calculated
+     from jsonb_array_elements(es) x where x->>'id'<>e->>'id' and x->>'date'=e->>'date' and x->>'shift'=e->>'shift' and x->>'method'='efectivo' and not coalesce((x->>'excluded')::boolean,false);
+     e:=e||jsonb_build_object('amount',round(calculated,2));
+    end if;
+   end if;
+  end if;
+  result:=result||jsonb_build_array(e);
+ end loop;
+ new.data:=jsonb_set(new.data,'{entries}',result);
+ return new;
+end $$;
+revoke all on function app_private.recalculate_worker_count_sales() from public,anon,authenticated;
+create trigger grafiplot_worker_count_sales before update of data on public.cuentas_claras_state
+for each row execute function app_private.recalculate_worker_count_sales();
 
-create function app_private.worker_invite(p_secret text) returns boolean
-language plpgsql security definer set search_path='' as $$
-begin
- if auth.uid() is null or not app_private.device_allowed() then raise exception 'Acceso denegado' using errcode='42501'; end if;
- if p_secret is null or p_secret !~ '^[a-f0-9]{64}$' then raise exception 'Código inválido'; end if;
- insert into app_private.worker_access(worker_id,invite_hash,invite_expires)
- values('__phone__',encode(sha256(convert_to(p_secret,'UTF8')),'hex'),now()+interval '7 days')
- on conflict(worker_id) do update set invite_hash=excluded.invite_hash,invite_expires=excluded.invite_expires,token_hash=null,activated_at=null;
- return true;
-end $$;
-create function app_private.worker_activate(p_invite text,p_token text) returns jsonb
-language plpgsql security definer set search_path='' as $$
-declare wid text;
-begin
- if p_invite is null or p_token is null or p_invite !~ '^[a-f0-9]{64}$' or p_token !~ '^[a-f0-9]{64}$' then raise exception 'Código inválido'; end if;
- -- El token lo genera el equipo antes del envío: un reintento de red es idempotente.
- select a.worker_id into wid from app_private.worker_access a where a.invite_hash=encode(sha256(convert_to(p_invite,'UTF8')),'hex') and a.invite_expires>now() for update;
- if wid is null then
-  select a.worker_id into wid from app_private.worker_access a where a.token_hash=encode(sha256(convert_to(p_token,'UTF8')),'hex');
-  if wid is null then raise exception 'El código venció o ya fue utilizado. Pide otro a tu encargado.'; end if;
- end if;
- update app_private.worker_access set token_hash=encode(sha256(convert_to(p_token,'UTF8')),'hex'),invite_hash=null,invite_expires=null,activated_at=now() where worker_id=wid;
- return jsonb_build_object('activated',true);
-end $$;
-create function app_private.worker_submit(p_token text,p_report jsonb) returns jsonb
+create or replace function app_private.worker_submit(p_token text,p_report jsonb) returns jsonb
 language plpgsql security definer set search_path='' as $$
 declare d jsonb; rd date; sh smallint; rid uuid; counted numeric; shifts jsonb; previous jsonb; next_shift jsonb; old app_private.worker_reports%rowtype;
 begin
@@ -85,11 +73,3 @@ begin
  return jsonb_build_object('id',rid,'duplicate',false);
 end $$;
 
--- Los wrappers invocadores no leen tablas. La autorización está en las funciones privadas.
-create function public.grafiplot_worker_invite(p_secret text) returns boolean language sql set search_path='' as $$ select app_private.worker_invite(p_secret) $$;
-create function public.grafiplot_worker_activate(p_invite text,p_token text) returns jsonb language sql set search_path='' as $$ select app_private.worker_activate(p_invite,p_token) $$;
-create function public.grafiplot_worker_submit(p_token text,p_report jsonb) returns jsonb language sql set search_path='' as $$ select app_private.worker_submit(p_token,p_report) $$;
-revoke all on function app_private.worker_invite(text),app_private.worker_activate(text,text),app_private.worker_submit(text,jsonb),public.grafiplot_worker_invite(text),public.grafiplot_worker_activate(text,text),public.grafiplot_worker_submit(text,jsonb) from public,anon,authenticated;
-grant usage on schema app_private to anon,authenticated;
-grant execute on function app_private.worker_invite(text),public.grafiplot_worker_invite(text) to authenticated;
-grant execute on function app_private.worker_activate(text,text),app_private.worker_submit(text,jsonb),public.grafiplot_worker_activate(text,text),public.grafiplot_worker_submit(text,jsonb) to anon;
