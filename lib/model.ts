@@ -20,7 +20,7 @@ export const emptyState = ():State => ({revision:1,demo:false,settings:{weekStar
 export function periodStart(date:string, start:number){ const d=new Date(date+'T12:00:00Z'); const diff=(d.getUTCDay()-start+7)%7; d.setUTCDate(d.getUTCDate()-diff); return d.toISOString().slice(0,10); }
 export function shiftEntries(s:State,date:string,shift:Shift){return s.entries.filter(e=>!e.excluded&&e.date===date&&e.shift===shift)}
 export function defaultCashOpening(s:State,date:string,shift:Shift):number{if(shift===1)return s.settings.cashFloat??0;const first=s.shifts.find(x=>x.date===date&&x.shift===1);return first?.counted??cashExpected(s,date,1)}
-export function cashExpected(s:State,date:string,shift:Shift):number{const sh=s.shifts.find(x=>x.date===date&&x.shift===shift); const es=shiftEntries(s,date,shift);return round((sh?.opening??defaultCashOpening(s,date,shift))+es.reduce((v,e)=>v+(e.method==='efectivo'?(e.kind==='venta'||e.kind==='otro_ingreso'?e.amount:e.kind==='bono'||e.kind==='descuento'?0:-e.amount):0),0));}
+export function cashExpected(s:State,date:string,shift:Shift):number{const sh=s.shifts.find(x=>x.date===date&&x.shift===shift); const es=shiftEntries(s,date,shift);return round((sh?.opening??defaultCashOpening(s,date,shift))+es.reduce((v,e)=>v+(e.method==='efectivo'?(e.kind==='venta'||e.kind==='otro_ingreso'?e.amount:e.kind==='bono'||e.kind==='descuento'||e.kind==='gasto'?0:-e.amount):0),0));}
 export function yapeEffective(s:State,y:Yape){return y.status==='incluido'&&!y.linkedEntryId&&y.shift!==null? (y.kind==='cobro'?y.amount:-y.amount):0}
 export function yapeTotals(s:State,filter:(date:string,shift:Shift)=>boolean){
  const totals={received:0,returned:0,paid:0,net:0};
@@ -40,6 +40,7 @@ export function weeklyPay(s:State,worker:Worker,date:string){const begin=periodS
 
 // Recalcula solo las ventas de los conteos enviados desde el celular autorizado.
 /** Calculate cash turnover from close minus opening, adding cash outflows back.
+ * Expenses are deducted separately from profit and never added back to sales.
  * Existing worker-count and other recorded cash sales are not counted twice. */
 export function recalculateCashClosings(s:State):State {
  const items=[...s.entries];
@@ -52,9 +53,8 @@ export function recalculateCashClosings(s:State):State {
    continue;
   }
   const others=items.filter(e=>!e.excluded&&e.date===sh.date&&e.shift===sh.shift&&e.method==='efectivo'&&e.sourceId!==id);
-  const outflow=round(others.filter(e=>!['venta','otro_ingreso','bono','descuento'].includes(e.kind)).reduce((v,e)=>v+e.amount,0));
   const inflow=round(others.filter(e=>['venta','otro_ingreso'].includes(e.kind)).reduce((v,e)=>v+e.amount,0));
-  const total=round(Math.max(0,sh.counted-sh.opening+outflow-inflow));
+  const total=round(Math.max(0,sh.counted-sh.opening-inflow));
   if(existing){items[items.indexOf(existing)]={...existing,amount:total};}
   else items.push({id:uid(),date:sh.date,shift:sh.shift,kind:'venta',method:'efectivo',amount:total,concept:'Venta calculada del cierre de caja',sourceId:id});
  }
@@ -65,7 +65,7 @@ export function recalculateWorkerCountSales(s:State):State {
   if(!e.cashCountAuto||!e.sourceId?.startsWith('worker-count:')||e.excluded)return e;
   const sh=s.shifts.find(x=>x.date===e.date&&x.shift===e.shift);
   if(sh?.counted==null)return e;
-  const adjustment=s.entries.filter(x=>x.id!==e.id&&!x.excluded&&x.date===e.date&&x.shift===e.shift&&x.method==='efectivo').reduce((sum,x)=>sum+(['venta','otro_ingreso'].includes(x.kind)?-x.amount:['bono','descuento'].includes(x.kind)?0:x.amount),0);
+  const adjustment=s.entries.filter(x=>x.id!==e.id&&!x.excluded&&x.date===e.date&&x.shift===e.shift&&x.method==='efectivo').reduce((sum,x)=>sum+(['venta','otro_ingreso'].includes(x.kind)?-x.amount:0),0);
   return {...e,amount:round(Math.max(0,sh.counted-sh.opening+adjustment))};
  })};
 }
