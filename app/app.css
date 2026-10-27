@@ -30,3 +30,15 @@ body{background:var(--bg);color:var(--ink)}
 .expense-shortcuts{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.expense-shortcuts button{border:1px solid #c8e1e5;background:#f3fbfb;color:#17646d;border-radius:999px;padding:10px 13px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}.expense-shortcuts button:hover{background:#d9f2f2}
 .expense-filters{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;margin:18px 0}.expense-summary{padding:12px 0;color:var(--muted)}.expense-summary strong{color:var(--ink);font-size:20px}.expense-empty{text-align:center;color:var(--muted);padding:28px!important}.expense-breakdown{display:grid;gap:12px;margin-top:16px}.expense-breakdown>div{display:grid;grid-template-columns:minmax(120px,1fr) minmax(70px,2fr) auto;align-items:center;gap:14px;font-size:14px}
 @media(max-width:720px){.expense-hero{align-items:stretch;flex-direction:column}.expense-filters{grid-template-columns:1fr}.expense-breakdown>div{grid-template-columns:1fr auto}.expense-breakdown .track{grid-column:1/-1;grid-row:2}}
+
+
+/* Panel y turnos: apariencia clara coherente */
+.content .card,.content .metric,.content .shift-row{background:#fff;color:#17242e;border:1px solid #e2e8ef;box-shadow:0 5px 18px rgba(20,39,53,.045)}
+.content .metric.accent{background:#fff8f9;border-color:#f3cbd1}
+.content .metric span,.content .metric small,.content .card p,.content .shift-row small{color:#60717d}
+.content .metric strong,.content .metric.accent strong,.content .card h2,.content .shift-row b,.content .shift-values b,.content .shift-number{color:#18252e}
+.content .shift-row{box-shadow:none;border-left:0;border-right:0;border-top:0;border-radius:0}
+.content .shift-number{background:#eff4f8}
+.content .shift-list,.content .shift-row{border-color:#e2e8ef}
+.content .card .text-button{color:#b91c3b;font-weight:700}
+.content .card .text-button:hover{text-decoration:underline}
