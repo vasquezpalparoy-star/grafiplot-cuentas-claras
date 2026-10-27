@@ -42,3 +42,37 @@ body{background:var(--bg);color:var(--ink)}
 .content .shift-list,.content .shift-row{border-color:#e2e8ef}
 .content .card .text-button{color:#b91c3b;font-weight:700}
 .content .card .text-button:hover{text-decoration:underline}
+
+
+/* Selector de tema */
+.theme-switch{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:8px 13px;border-radius:10px;border:1px solid #d6e1e8;background:#fff;color:#20323e;font-weight:700;cursor:pointer}
+.theme-switch:hover{background:#edf4f8}
+.app-shell.theme-dark{--ink:#edf2f7;--muted:#a4b3c0;--teal:#73d0d8;--deep:#151d27;--line:#34404e;--surface:#222d39;--bg:#111923;background:var(--bg);color:var(--ink)}
+.theme-dark .work,.theme-dark .content{background:#111923;color:#edf2f7}
+.theme-dark .sidebar{background:#182330;color:#ecf2f7;border-color:#34404e;box-shadow:none}
+.theme-dark .sidebar .brand small,.theme-dark .sidebar-foot,.theme-dark .sidebar-foot small{color:#afbfca}
+.theme-dark .sidebar .nav-item{color:#c4d0d9}
+.theme-dark .sidebar .nav-item.active,.theme-dark .sidebar .nav-item:hover{background:#263c4c;color:#fff}
+.theme-dark .sidebar-foot{border-color:#34404e}
+.theme-dark .topbar{background:#182330;border-color:#34404e;color:#edf2f7}
+.theme-dark .breadcrumb,.theme-dark .page-heading,.theme-dark .page-heading h1,.theme-dark .eyebrow{color:#edf2f7}
+.theme-dark .theme-switch{background:#263544;border-color:#455667;color:#fff}
+.theme-dark .theme-switch:hover{background:#364a5b}
+.theme-dark .content .card,.theme-dark .content .metric,.theme-dark .content .shift-row{background:#202c3a;color:#edf2f7;border-color:#384756;box-shadow:none}
+.theme-dark .content .metric.accent{background:#37242f;border-color:#6d374b}
+.theme-dark .content .metric strong,.theme-dark .content .metric.accent strong,.theme-dark .content .card h2,.theme-dark .content .shift-row b,.theme-dark .content .shift-values b,.theme-dark .content .shift-number{color:#f5f8fc}
+.theme-dark .content .metric span,.theme-dark .content .metric small,.theme-dark .content .card p,.theme-dark .content .shift-row small{color:#b4c2ce}
+.theme-dark .content .shift-number,.theme-dark .content .checks label,.theme-dark .content .cash-total,.theme-dark .content .difference,.theme-dark .content .worker-due,.theme-dark .content .info-line{background:#2c3b4b;color:#edf2f7}
+.theme-dark .content .card .text-button{color:#ff8b9d}
+.theme-dark .expense-hero{background:linear-gradient(115deg,#263947,#1b2936);border-color:#3a4b59}
+.theme-dark .expense-hero p,.theme-dark .expense-hero .eyebrow{color:#b7d2dc}
+.theme-dark .expense-shortcuts button{background:#304655;border-color:#4b6878;color:#e9f7fa}
+.theme-dark .expense-shortcuts button:hover{background:#3e596c}
+.theme-dark .field,.theme-dark .field span,.theme-dark .subtle{color:#c1ced8}
+.theme-dark input,.theme-dark textarea,.theme-dark select,.theme-dark .field input,.theme-dark .field textarea{background:#263544;color:#f6f9fb;border-color:#4b6072;color-scheme:dark}
+.theme-dark .table-wrap th{background:#273644;color:#b9c7d2}
+.theme-dark .table-wrap td,.theme-dark .table-wrap tr{border-color:#394959;color:#eef3f8}
+.theme-dark .expense-summary strong{color:#fff}
+.theme-dark .track{background:#3a4b58}
+.theme-dark .metric,.theme-dark .card{color-scheme:dark}
+@media(max-width:640px){.theme-switch{padding:9px 10px}.theme-switch span{display:none}}
