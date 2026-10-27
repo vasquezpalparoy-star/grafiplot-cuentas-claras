@@ -1,4 +1,4 @@
-name: Construir APK de informes
+name: Construir APK Grafiplot administrador y local
 on:
   push:
     branches: [main, 'codex/informes-apk']
@@ -24,6 +24,11 @@ jobs:
       - run: gradle --no-daemon -p native/android assembleDebug
       - uses: actions/upload-artifact@v4
         with:
-          name: Grafiplot-Informes-Android
+          name: Grafiplot-Local-Android
           path: native/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Grafiplot-Administrador-Android
+          path: native/android/admin/build/outputs/apk/debug/admin-debug.apk
           retention-days: 90
