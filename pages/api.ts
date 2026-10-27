@@ -105,8 +105,13 @@ export async function apiFetch(path:string,init:RequestInit={}):Promise<Response
           if(!emailValid(String(email||'').trim()))return fail('Escribe un correo válido.');
           const redirect=location.origin+location.pathname;
           const response=await fetch(`${url}/auth/v1/recover?redirect_to=${encodeURIComponent(redirect)}`,{method:'POST',headers:headers(undefined,{'Content-Type':'application/json'}),body:JSON.stringify({email:email!.trim().toLowerCase()})});
-          if(response.status===429)return fail('Se alcanzó el límite de correos de Supabase. Espera antes de pedir otro enlace y revisa el mensaje más reciente.',429);
-          if(!response.ok)return fail('No se pudo solicitar el enlace. Intenta más tarde.',response.status);
+          if(!response.ok){
+            const detail=await response.json().catch(()=>({})) as {code?:string;error_code?:string;msg?:string};
+            const code=detail.code||detail.error_code;
+            if(response.status===429)return fail('Límite de correos alcanzado. Supabase permite pocos mensajes por hora sin SMTP propio. Revisa Authentication → Rate Limits.',429);
+            if(code==='email_address_not_authorized')return fail('Supabase no permite enviar a este correo con el servicio predeterminado. Configura SMTP propio o verifica que el correo pertenezca al equipo del proyecto.',response.status);
+            return fail('No se pudo enviar el correo de recuperación. Revisa Authentication → Logs y la configuración SMTP de Supabase.',response.status);
+          }
           return json({pending:true});
         }
         if(action==='set-password'){
