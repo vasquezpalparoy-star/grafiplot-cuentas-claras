@@ -9,10 +9,9 @@ begin
   if e->>'cashCountAuto'='true' and e->>'sourceId' like 'worker-count:%' and not coalesce((e->>'excluded')::boolean,false) then
     select x into sh from jsonb_array_elements(coalesce(new.data->'shifts','[]'::jsonb)) x where x->>'date'=e->>'date' and x->>'shift'=e->>'shift' limit 1;
     if sh->>'counted' is not null then
-     select greatest(0,(sh->>'counted')::numeric-coalesce((sh->>'opening')::numeric,60)+coalesce(sum(case
+     select greatest(0,(sh->>'counted')::numeric-coalesce((sh->>'opening')::numeric,0)+coalesce(sum(case
       when x->>'kind' in ('venta','otro_ingreso') then -(x->>'amount')::numeric
-      when x->>'kind' in ('bono','descuento') then 0
-      else (x->>'amount')::numeric end),0)) into calculated
+      else 0 end),0)) into calculated
      from jsonb_array_elements(es) x where x->>'id'<>e->>'id' and x->>'date'=e->>'date' and x->>'shift'=e->>'shift' and x->>'method'='efectivo' and not coalesce((x->>'excluded')::boolean,false);
      e:=e||jsonb_build_object('amount',round(calculated,2));
     end if;
@@ -53,13 +52,13 @@ begin
  select coalesce(jsonb_agg(x),'[]'::jsonb) into shifts from jsonb_array_elements(d->'shifts') x where not(x->>'date'=rd::text and (x->>'shift')::smallint=sh);
  -- Se conserva el conteo total y los movimientos existentes. Yape y asistencia se conservan.
  -- El propietario completa y confirma el cierre en la aplicación principal.
- next_shift:=coalesce(previous,jsonb_build_object('date',rd,'shift',sh,'yapeClosing',null,'explanation',''))||jsonb_build_object('opening',60,'counted',counted,'closed',false);
+ next_shift:=coalesce(previous,jsonb_build_object('date',rd,'shift',sh,'yapeClosing',null,'explanation',''))||jsonb_build_object('opening',opening,'counted',counted,'closed',false);
  shifts:=shifts||jsonb_build_array(next_shift);
  d:=jsonb_set(d,'{shifts}',shifts);
  -- Guarda todo el conteo y crea una venta calculada solo si no hay venta manual.
  -- El trigger ajusta después el importe al registrar gastos/otros movimientos.
  if not exists(select 1 from jsonb_array_elements(coalesce(d->'entries','[]'::jsonb)) x where x->>'date'=rd::text and (x->>'shift')::smallint=sh and x->>'kind'='venta' and x->>'method'='efectivo' and not coalesce((x->>'excluded')::boolean,false)) then
-  d:=jsonb_set(d,'{entries}',coalesce(d->'entries','[]'::jsonb)||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'date',rd,'shift',sh,'kind','venta','method','efectivo','amount',greatest(0,counted-60),'concept','Ventas en efectivo del conteo','sourceId','worker-count:'||rid::text,'cashCountAuto',true)));
+  d:=jsonb_set(d,'{entries}',coalesce(d->'entries','[]'::jsonb)||jsonb_build_array(jsonb_build_object('id',gen_random_uuid(),'date',rd,'shift',sh,'kind','venta','method','efectivo','amount',greatest(0,counted-opening),'concept','Ventas en efectivo del conteo','sourceId','worker-count:'||rid::text,'cashCountAuto',true)));
  end if;
  d:=jsonb_set(d,'{audit}',jsonb_build_array(jsonb_build_object('id',rid,'at',now(),'action','crear','entity','conteo trabajador','recordId',rid,'before',previous,'after',p_report,'note','Conteo enviado desde el celular autorizado. Efectivo inicial: S/ 60.'))||coalesce(d->'audit','[]'::jsonb));
  insert into app_private.worker_reports(id,worker_id,report_date,shift,payload) values(rid,'__phone__',rd,sh,p_report);
