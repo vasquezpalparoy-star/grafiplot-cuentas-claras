@@ -52,6 +52,9 @@ async function rpc(name:string,body:object={},access?:string) {
 async function accessStatus(access?:string) {
   const bearer=access||await token();
   if(!bearer)return {authenticated:false};
+  // La recuperación debe poder completarse incluso con tres dispositivos registrados.
+  // El enlace ya fue validado por Supabase Auth; no concede acceso a los datos.
+  if(localStorage.getItem(recoveryKey)==='1')return {authenticated:false,recovery:true};
   const registered=await rpc('register_device',{p_label:/Mobi|Android|iPhone/i.test(navigator.userAgent)?'Celular':'Computadora'},bearer) as boolean;
   if(registered)return {authenticated:true,recovery:localStorage.getItem(recoveryKey)==='1'};
   if(await rpc('is_revoked',{},bearer) as boolean){
