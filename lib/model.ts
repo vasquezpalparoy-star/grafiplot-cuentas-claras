@@ -9,7 +9,7 @@ export type Source = { id:string; name:string; uploadedAt:string; rows:number; s
 export type CashShift = { date:string; shift:Shift; opening:number; counted:number|null; yapeClosing?:number|null; explanation:string; closed:boolean };
 export type Settings = { weekStart:number; shift1Start:string; shift2Start:string; currency:string; cashFloat?:number };
 export type Audit = { id:string; at:string; action:string; entity:string; recordId:string; before:unknown; after:unknown; note:string };
-export type FixedExpense = {id:string;concept:string;amount:number;day:number;startDate:string;active:boolean};
+export type FixedExpense = {id:string;concept:string;amount:number;day:number;startDate:string;active:boolean;frequency?:'diario'|'mensual'};
 export type Reminder = {id:string;concept:string;dueDate:string;done:boolean};
 export type State = {fixedExpenses?:FixedExpense[]; reminders?:Reminder[]; revision:number; settings:Settings; workers:Worker[]; attendance:Attendance[]; entries:Entry[]; yape:Yape[]; sources:Source[]; shifts:CashShift[]; audit:Audit[]; demo:boolean };
 export const uid = () => crypto.randomUUID();
@@ -74,7 +74,17 @@ export function recalculateWorkerCountSales(s:State):State {
 export function materializeFixedExpenses(s:State,until:string):State {
  const pending:Entry[]=[];
  for(const f of s.fixedExpenses||[]){
-  if(!f.active||!f.concept.trim()||f.amount<=0||f.day<1||f.day>31)continue;
+  if(!f.active||!f.concept.trim()||f.amount<=0)continue;
+  if(f.frequency==='diario'){
+   let d=f.startDate;
+   for(let n=0;n<3660&&d<=until;n++){
+    const marker='fixed:'+f.id+':'+d;
+    if(!s.entries.some(e=>e.sourceId===marker)&&!pending.some(e=>e.sourceId===marker))pending.push({id:uid(),date:d,shift:1,kind:'gasto',amount:f.amount,method:'efectivo',concept:f.concept,sourceId:marker,fixed:true});
+    const next=new Date(d+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+1);d=next.toISOString().slice(0,10);
+   }
+   continue;
+  }
+  if(f.day<1||f.day>31)continue;
   let ym=f.startDate.slice(0,7);
   if(!/^\d{4}-\d{2}$/.test(ym))continue;
   for(let n=0;n<120&&ym<=until.slice(0,7);n++){
