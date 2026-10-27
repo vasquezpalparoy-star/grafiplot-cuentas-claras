@@ -39,6 +39,27 @@ export function sales(s:State,filter:(date:string,shift:Shift)=>boolean){const e
 export function weeklyPay(s:State,worker:Worker,date:string){const begin=periodStart(date,s.settings.weekStart);const end=new Date(begin+'T12:00:00Z');end.setUTCDate(end.getUTCDate()+6);const until=end.toISOString().slice(0,10);const a=s.attendance.filter(x=>x.present!==false&&x.workerId===worker.id&&x.date>=begin&&x.date<=until);const shifts=a.length,days=new Set(a.map(x=>x.date)).size,hours=round(a.reduce((v,x)=>v+x.hours,0));const base=round(worker.rate*(worker.rateType==='turno'?shifts:worker.rateType==='dia'?days:worker.rateType==='hora'?hours:1));const adjustments=s.entries.filter(e=>!e.excluded&&e.workerId===worker.id&&e.date>=begin&&e.date<=until);const sum=(kind:Entry['kind'])=>round(adjustments.filter(e=>e.kind===kind).reduce((v,e)=>v+e.amount,0));const bonus=sum('bono'),discount=sum('descuento'),advance=sum('adelanto'),paid=sum('personal');return {begin,until,shifts,days,hours,base,bonus,discount,advance,paid,due:round(Math.max(0,base+bonus-discount-advance-paid))};}
 
 // Recalcula solo las ventas de los conteos enviados desde el celular autorizado.
+/** Calculate cash turnover from close minus opening, adding cash outflows back.
+ * Existing worker-count and other recorded cash sales are not counted twice. */
+export function recalculateCashClosings(s:State):State {
+ const items=[...s.entries];
+ for(const sh of s.shifts){
+  const id='cash-close:'+sh.date+':'+sh.shift;
+  const existing=items.find(e=>e.sourceId===id);
+  const workerCount=items.some(e=>!e.excluded&&e.date===sh.date&&e.shift===sh.shift&&e.kind==='venta'&&e.cashCountAuto&&e.sourceId?.startsWith('worker-count:'));
+  if(sh.counted===null||workerCount){
+   if(existing)items.splice(items.indexOf(existing),1);
+   continue;
+  }
+  const others=items.filter(e=>!e.excluded&&e.date===sh.date&&e.shift===sh.shift&&e.method==='efectivo'&&e.sourceId!==id);
+  const outflow=round(others.filter(e=>!['venta','otro_ingreso','bono','descuento'].includes(e.kind)).reduce((v,e)=>v+e.amount,0));
+  const inflow=round(others.filter(e=>['venta','otro_ingreso'].includes(e.kind)).reduce((v,e)=>v+e.amount,0));
+  const total=round(Math.max(0,sh.counted-sh.opening+outflow-inflow));
+  if(existing){items[items.indexOf(existing)]={...existing,amount:total};}
+  else items.push({id:uid(),date:sh.date,shift:sh.shift,kind:'venta',method:'efectivo',amount:total,concept:'Venta calculada del cierre de caja',sourceId:id});
+ }
+ return {...s,entries:items};
+}
 export function recalculateWorkerCountSales(s:State):State {
  return {...s,entries:s.entries.map(e=>{
   if(!e.cashCountAuto||!e.sourceId?.startsWith('worker-count:')||e.excluded)return e;
