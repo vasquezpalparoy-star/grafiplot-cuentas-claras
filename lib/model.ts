@@ -9,15 +9,17 @@ export type Source = { id:string; name:string; uploadedAt:string; rows:number; s
 export type CashShift = { date:string; shift:Shift; opening:number; counted:number|null; yapeClosing?:number|null; explanation:string; closed:boolean };
 export type Settings = { weekStart:number; shift1Start:string; shift2Start:string; currency:string; cashFloat?:number };
 export type Audit = { id:string; at:string; action:string; entity:string; recordId:string; before:unknown; after:unknown; note:string };
-export type State = { revision:number; settings:Settings; workers:Worker[]; attendance:Attendance[]; entries:Entry[]; yape:Yape[]; sources:Source[]; shifts:CashShift[]; audit:Audit[]; demo:boolean };
+export type FixedExpense = {id:string;concept:string;amount:number;day:number;startDate:string;active:boolean};
+export type Reminder = {id:string;concept:string;dueDate:string;done:boolean};
+export type State = {fixedExpenses?:FixedExpense[]; reminders?:Reminder[]; revision:number; settings:Settings; workers:Worker[]; attendance:Attendance[]; entries:Entry[]; yape:Yape[]; sources:Source[]; shifts:CashShift[]; audit:Audit[]; demo:boolean };
 export const uid = () => crypto.randomUUID();
 export const todayLima = () => new Intl.DateTimeFormat('en-CA',{timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
 export const fmt = (n:number) => 'S/ '+(Number(n)||0).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
 export const round = (n:number) => Math.round((n+Number.EPSILON)*100)/100;
-export const emptyState = ():State => ({revision:1,demo:false,settings:{weekStart:1,shift1Start:'08:00',shift2Start:'16:00',currency:'PEN',cashFloat:60},workers:[],attendance:[],entries:[],yape:[],sources:[],shifts:[],audit:[]});
+export const emptyState = ():State => ({revision:1,demo:false,settings:{weekStart:1,shift1Start:'08:00',shift2Start:'16:00',currency:'PEN',cashFloat:0},workers:[],attendance:[],entries:[],yape:[],sources:[],shifts:[],audit:[],fixedExpenses:[],reminders:[]});
 export function periodStart(date:string, start:number){ const d=new Date(date+'T12:00:00Z'); const diff=(d.getUTCDay()-start+7)%7; d.setUTCDate(d.getUTCDate()-diff); return d.toISOString().slice(0,10); }
 export function shiftEntries(s:State,date:string,shift:Shift){return s.entries.filter(e=>!e.excluded&&e.date===date&&e.shift===shift)}
-export function defaultCashOpening(s:State,date:string,shift:Shift):number{if(shift===1)return s.settings.cashFloat??60;const first=s.shifts.find(x=>x.date===date&&x.shift===1);return first?.counted??cashExpected(s,date,1)}
+export function defaultCashOpening(s:State,date:string,shift:Shift):number{if(shift===1)return s.settings.cashFloat??0;const first=s.shifts.find(x=>x.date===date&&x.shift===1);return first?.counted??cashExpected(s,date,1)}
 export function cashExpected(s:State,date:string,shift:Shift):number{const sh=s.shifts.find(x=>x.date===date&&x.shift===shift); const es=shiftEntries(s,date,shift);return round((sh?.opening??defaultCashOpening(s,date,shift))+es.reduce((v,e)=>v+(e.method==='efectivo'?(e.kind==='venta'||e.kind==='otro_ingreso'?e.amount:e.kind==='bono'||e.kind==='descuento'?0:-e.amount):0),0));}
 export function yapeEffective(s:State,y:Yape){return y.status==='incluido'&&!y.linkedEntryId&&y.shift!==null? (y.kind==='cobro'?y.amount:-y.amount):0}
 export function yapeTotals(s:State,filter:(date:string,shift:Shift)=>boolean){
@@ -45,4 +47,22 @@ export function recalculateWorkerCountSales(s:State):State {
   const adjustment=s.entries.filter(x=>x.id!==e.id&&!x.excluded&&x.date===e.date&&x.shift===e.shift&&x.method==='efectivo').reduce((sum,x)=>sum+(['venta','otro_ingreso'].includes(x.kind)?-x.amount:['bono','descuento'].includes(x.kind)?0:x.amount),0);
   return {...e,amount:round(Math.max(0,sh.counted-sh.opening+adjustment))};
  })};
+}
+
+/** Generate only missing due monthly expenses up to the current local day, idempotently. */
+export function materializeFixedExpenses(s:State,until:string):State {
+ const pending:Entry[]=[];
+ for(const f of s.fixedExpenses||[]){
+  if(!f.active||!f.concept.trim()||f.amount<=0||f.day<1||f.day>31)continue;
+  let ym=f.startDate.slice(0,7);
+  if(!/^\d{4}-\d{2}$/.test(ym))continue;
+  for(let n=0;n<120&&ym<=until.slice(0,7);n++){
+   const [year,month]=ym.split('-').map(Number);
+   const day=Math.min(f.day,new Date(Date.UTC(year,month,0)).getUTCDate());
+   const due=ym+'-'+String(day).padStart(2,'0');const marker='fixed:'+f.id+':'+ym;
+   if(due>=f.startDate&&due<=until&&!s.entries.some(e=>e.sourceId===marker)&&!pending.some(e=>e.sourceId===marker))pending.push({id:uid(),date:due,shift:1,kind:'gasto',amount:f.amount,method:'efectivo',concept:f.concept,sourceId:marker,fixed:true});
+   const next=new Date(Date.UTC(year,month,1));ym=next.toISOString().slice(0,7);
+  }
+ }
+ return pending.length?{...s,entries:[...s.entries,...pending]}:s;
 }
