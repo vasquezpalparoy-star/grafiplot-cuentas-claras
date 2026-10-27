@@ -76,3 +76,10 @@ body{background:var(--bg);color:var(--ink)}
 .theme-dark .track{background:#3a4b58}
 .theme-dark .metric,.theme-dark .card{color-scheme:dark}
 @media(max-width:640px){.theme-switch{padding:9px 10px}.theme-switch span{display:none}}
+
+/* Anotaciones y controles de gastos */
+.reminder-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid var(--line)}
+.reminder-row>div:first-child{display:flex;flex-direction:column;gap:6px;min-width:0}.reminder-row small{color:var(--muted)}
+.reminder-row .button-row{display:flex;align-items:center;gap:10px}
+.theme-dark .reminder-row{border-color:#394959}
+@media(max-width:720px){.reminder-row{align-items:stretch;flex-direction:column}.reminder-row .button-row{justify-content:flex-start}}
