@@ -83,3 +83,16 @@ body{background:var(--bg);color:var(--ink)}
 .reminder-row .button-row{display:flex;align-items:center;gap:10px}
 .theme-dark .reminder-row{border-color:#394959}
 @media(max-width:720px){.reminder-row{align-items:stretch;flex-direction:column}.reminder-row .button-row{justify-content:flex-start}}
+
+
+/* Aviso de anotación vencida en cualquier pestaña */
+.reminder-overlay{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(11,20,31,.68);backdrop-filter:blur(5px)}
+.reminder-popup{width:min(100%,480px);padding:32px 28px;border-radius:20px;background:#fff;color:#142330;box-shadow:0 25px 90px rgba(0,0,0,.25);text-align:center}
+.reminder-popup .reminder-kicker{font-weight:800;letter-spacing:.1em;font-size:12px;color:#c02042;margin:0 0 12px}
+.reminder-popup h2{font-size:25px;margin:0 0 14px;color:#142330}
+.reminder-popup .reminder-message{font-size:22px;font-weight:750;overflow-wrap:anywhere;color:#142330}
+.reminder-popup .reminder-date{color:#516575;font-size:14px;margin:12px 0 22px}
+.reminder-popup small{display:block;color:#667986;font-size:12px;line-height:1.5;margin-top:14px}
+.theme-dark .reminder-popup{background:#202d3b;color:#f3f7fa;border:1px solid #405265}
+.theme-dark .reminder-popup h2,.theme-dark .reminder-popup .reminder-message{color:#f3f7fa}
+.theme-dark .reminder-popup .reminder-date,.theme-dark .reminder-popup small{color:#bdcad6}
