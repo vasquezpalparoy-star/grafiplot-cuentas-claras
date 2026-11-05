@@ -19,7 +19,7 @@ export const round = (n:number) => Math.round((n+Number.EPSILON)*100)/100;
 export const emptyState = ():State => ({revision:1,demo:false,settings:{weekStart:1,shift1Start:'08:00',shift2Start:'16:00',currency:'PEN',cashFloat:0},workers:[],attendance:[],entries:[],yape:[],sources:[],shifts:[],audit:[],fixedExpenses:[],reminders:[]});
 export function periodStart(date:string, start:number){ const d=new Date(date+'T12:00:00Z'); const diff=(d.getUTCDay()-start+7)%7; d.setUTCDate(d.getUTCDate()-diff); return d.toISOString().slice(0,10); }
 export function shiftEntries(s:State,date:string,shift:Shift){return s.entries.filter(e=>!e.excluded&&e.date===date&&e.shift===shift)}
-export function defaultCashOpening(s:State,date:string,shift:Shift):number{if(shift===1)return s.settings.cashFloat??0;const first=s.shifts.find(x=>x.date===date&&x.shift===1);return first?.counted??cashExpected(s,date,1)}
+export function defaultCashOpening(s:State,date:string,shift:Shift):number{return s.settings.cashFloat??0}
 export function cashExpected(s:State,date:string,shift:Shift):number{const sh=s.shifts.find(x=>x.date===date&&x.shift===shift); const es=shiftEntries(s,date,shift);return round((sh?.opening??defaultCashOpening(s,date,shift))+es.reduce((v,e)=>v+(e.method==='efectivo'?(e.kind==='venta'||e.kind==='otro_ingreso'?e.amount:e.kind==='bono'||e.kind==='descuento'?0:-e.amount):0),0));}
 export function yapeEffective(s:State,y:Yape){return y.status==='incluido'&&!y.linkedEntryId&&y.shift!==null? (y.kind==='cobro'?y.amount:-y.amount):0}
 export function yapeTotals(s:State,filter:(date:string,shift:Shift)=>boolean){
