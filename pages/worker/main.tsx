@@ -18,17 +18,17 @@ function App(){
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[notice,setNotice]=useState('');
  const [pending,setPending]=useState<{id:string;label:string}[]>([]);
  const admin=new URLSearchParams(location.search).has('activar');
- async function refresh(){try{const s=await rpc('status',{p_token:token}) as Status;setStatus(s);if(s.workers?.length)setWorker(w=>w||s.workers![0].id);if(!s.authorized)await rpc('register',{p_token:token})}catch(e){setError((e as Error).message)}}
- useEffect(()=>{void refresh();const t=setInterval(()=>void refresh(),15000);return()=>clearInterval(t)},[]);
+ async function refresh(quiet=false){try{const s=await rpc('status',{p_token:token}) as Status;setStatus(s);if(s.workers?.length)setWorker(w=>w||s.workers![0].id);if(!s.authorized)await rpc('register',{p_token:token});if(!quiet)setError('')}catch(e){if(!quiet)setError('No se pudo actualizar la pantalla. Comprueba tu conexión y vuelve a intentarlo.')}}
+ useEffect(()=>{void refresh();const t=setInterval(()=>void refresh(true),15000);return()=>clearInterval(t)},[]);
  function adminToken(){try{return JSON.parse(localStorage.getItem('grafiplot-pages-session')||'{}').access_token||''}catch{return ''}}
  async function requests(){try{setError('');setPending(await rpc('pending',{},adminToken()))}catch(e){setError('Inicia sesión como administrador en este navegador para aprobar el teléfono.')}}
  useEffect(()=>{if(admin)void requests()},[admin]);
  async function approve(id:string){try{setBusy(true);await rpc('approve',{p_device_hash:id},adminToken());setNotice('Celular autorizado');await requests()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  async function send(action:string,payload:object){
   setBusy(true);setError('');setNotice('');
-  try{await rpc('action',{p_token:token,p_action:action,p_payload:{date:todayLima(),shift,...payload}});setNotice('Guardado correctamente en el sistema');if(action==='gasto'){setConcept('');setAmount('')}await refresh()}catch(e){setError((e as Error).message)}finally{setBusy(false)}
+  try{await rpc('action',{p_token:token,p_action:action,p_payload:{date:todayLima(),shift,...payload}});setNotice('Guardado correctamente en el sistema');if(action==='gasto'){setConcept('');setAmount('')}await refresh(true)}catch(e){setError((e as Error).message)}finally{setBusy(false)}
  }
- async function close(){setBusy(true);setError('');try{await rpc('submit',{p_token:token,p_report:{date:todayLima(),shift,counted}});setNotice('Cierre registrado correctamente');setCounted('');await refresh()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+ async function close(){setBusy(true);setError('');try{await rpc('submit',{p_token:token,p_report:{date:todayLima(),shift,counted}});setNotice('Cierre registrado correctamente');setCounted('');await refresh(true)}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
  const sh=status.shifts?.find(x=>x.shift===shift);
  const marks=status.attendance?.filter(x=>x.workerId===worker&&x.shift===shift)||[];
  const entered=marks.some(x=>x.event==='entrada'),left=marks.some(x=>x.event==='salida');
